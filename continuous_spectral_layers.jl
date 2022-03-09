@@ -1,47 +1,42 @@
 using ApproxFun
 using Quadrature
+using Flux
+import ChainRulesCore: rrule, frule
 
-abstract type AbstractOperator end
-
-struct KernelOperator{K,S} <: AbstractOperator
-    kernel::K
-    solver::S = QuadGKJL()
+struct SpectralKernelOperator{F,L,F1,F2,P}
+    B::L # Linear Operator
+    λ::F1 # Spectral Scaling Function
+    b::F2 # Bias function
+    σ::F # activation function
+    project::P # Projection operator
 end
 
-function (ko::KernelOperator)(f::Function; solver=k.solver)
-    k = ko.kernel
-    fun = function(u,p) 
-        k(p,u) * f(u)
+SpectralKernelOperator(B, λ, b) = SpectralKernelOperator(B, λ, b, identity, f -> Fun(f, 0..1))
+
+Flux.@functor SpectralKernelOperator
+
+function (cs::SpectralKernelOperator)(x)
+    B, λ, b, σ = cs.B, cs.λ, cs.b, cs.σ
+    y = B(x)
+    z = t -> let yt = y(t)
+        σ(yt - λ(t)*yt + b(t))
     end
-    return function(x)
-        prob = QuadratureProblem(fun,0,1,x)
-        solve(prob, solver)
-    end
+    cs.project(z)
 end
 
-struct FourierKernel{T<:Real}
-    ω::T
-    θ::T
-end
+#function ChainRulesCore.rrule(cs::ContinuousSpectral, x::Function)
+    
+#end
 
-FourierKernel(; ω₀ = 0.0, ω₁ = 1.0) = FourierKernel((ω₁-ω₀), ω₀)
-
-(ff::FourierKernel)(x,y) = sin(ff.ω*π*x*y + ff.θ)
-
-struct PolynomialKernel{M<:AbstractMatrix}
-    m::M
-end
-
-function (po::PolynomialOperator)(x,y)
-    (m,n) = size(po.m)
-    X = [x^(k-1) for k in 1:m]
-    Y = [y^(k-1) for k in 1:n]
-    X * po.m * Y
-end
-
-struct ContinuousSpectral{F,M,V}
-    B::M
-    λ::V
-    b::V
+struct InnerProductOperator{F,W,B}
+    w::Vector{W}
+    b::B
     σ::F
+end
+
+Flux.@functor InnerProductOperator
+
+function (ipo::InnerProductOperator)(x)
+    y = [w(x) for w in ipo.w]
+    σ.(y + b)
 end
