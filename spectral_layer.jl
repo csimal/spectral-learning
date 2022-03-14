@@ -8,7 +8,7 @@ struct Spectral{F, M<:AbstractMatrix, V}
 end
 
 function Spectral(in::Integer, out::Integer, σ=identity;
-    init=glorot_uniform,
+    init=Flux.glorot_uniform,
     bias=true
     )
     B = init(out, in)
@@ -17,9 +17,9 @@ function Spectral(in::Integer, out::Integer, σ=identity;
     Spectral(B, λ, b, σ)
 end
 
-#Flux.trainable(s::Spectral) = (s.λ,)
+Flux.trainable(s::Spectral) = (s.λ, s.b,)
 
-@functor Spectral
+Flux.@functor Spectral
 
 function (s::Spectral)(x::AbstractVecOrMat)
     B, λ, b, σ = s.B, s.λ, s.b, s.σ
