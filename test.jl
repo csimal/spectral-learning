@@ -5,7 +5,10 @@ using Flux: onehotbatch, onecold, logitcrossentropy, throttle, @epochs
 using Base.Iterators: repeated
 using Parameters: @with_kw
 using MLDatasets
-using Makie
+#using Makie
+using Plots
+
+include("spectral_layer.jl")
 
 if has_cuda()
     @info "CUDA is on"
@@ -67,16 +70,51 @@ function accuracy(dataloader, model)
     acc / length(dataloader)
 end
 
-function train(; kws...)
+function train(get_model; kws...)
     args = Args(; kws...)
     traindata, testdata = get_data(args)
-    m = build_model()
+    m = get_model()
     loss(x,y) = logitcrossentropy(m(x), y)
+    train_loss = Float32[]
+    train_accuracy = Float32[]
+    test_loss = Float32[]
+    test_accuracy = Float32[]
 
-    eval_cb = () -> @show loss_all(traindata, m)
+    eval_cb = () -> begin
+        l = loss_all(traindata, m)
+        @show l
+        push!(train_loss, l)
+        push!(test_loss, loss_all(testdata, m))
+        push!(train_accuracy, accuracy(traindata, m))
+        push!(test_accuracy, accuracy(traindata, m))
+    end
     opt = ADAM(args.η)
 
     @epochs args.epochs Flux.train!(loss, params(m), traindata, opt, cb=eval_cb)
     @show accuracy(traindata, m)
     @show accuracy(testdata, m)
+    return train_loss, test_loss, train_accuracy, test_accuracy
+end
+
+@time trl, ttl, tra, tta = train(build_model)
+
+@time strl, sttl, stra, stta = train(build_spectral_model)
+
+begin
+    Plots.plot(float.(trl), label="Train (Dense)",
+    xlabel="epoch",
+    ylabel="loss"
+    )
+    Plots.plot!(float.(ttl), label="Test (Dense)")
+    Plots.plot!(float.(strl), label="Train (Spectral)")
+    Plots.plot!(float.(sttl), label="Test (Spectral)")
+end
+
+begin
+    Plots.plot(float.(tra), label="Train (Dense)",
+    xlabel="epoch",
+    ylabel="accuracy")
+    Plots.plot!(float.(tta), label="Test (Dense)")
+    Plots.plot!(float.(stra), label="Train (Spectral)")
+    Plots.plot!(float.(stta), label="Test (Spectral)")
 end

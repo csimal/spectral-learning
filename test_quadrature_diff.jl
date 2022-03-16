@@ -9,10 +9,9 @@ ub = 3ones(2)
 p = [1.5,2.0]
 
 function testf(p)
-    prob = QuadratureProblem(f,lb,ub,p)
+    prob = QuadratureProblem{false}(f,lb,ub,p)
     sin(solve(prob,CubaCuhre(),reltol=1e-6,abstol=1e-6)[1])
 end
-
 dp1 = Zygote.gradient(testf,p)
 dp2 = FiniteDiff.finite_difference_gradient(testf,p)
 dp3 = ForwardDiff.gradient(testf,p)
@@ -64,7 +63,7 @@ testp(p)
 Zygote.gradient(p, 2)
 Zygote.gradient(p -> p(2), p)[1][1]
 Zygote.gradient(testp, p)
-
+ForwardDiff.gradient(testp, p)
 
 q(x) = Zygote.gradient(p -> p(x), p)[1][1]
 q(1)
@@ -75,3 +74,45 @@ prob = QuadratureProblem(fun, 0,1, [])
 sol = solve(prob, HCubatureJL())
 
 Zygote.gradient(f -> f(2), sin)
+
+function eval_poly(a::Vector{<:Number}, x)
+    y = zero(x * a[1])
+    for α in a
+        y *= x
+        y += α
+    end
+    return y
+end
+
+eval_poly(p::Polynomial, x) = eval_poly(p.a, x)
+
+Zygote.gradient(p -> eval_poly(p,2), p)
+
+function teste(p::Polynomial)
+    function fun(u,_)
+        eval_poly(p,u) * identity(u)
+    end
+    prob = QuadratureProblem(fun, 0, 1, ())
+    solve(prob, HCubatureJL()).u
+end
+
+function testa(a::Vector)
+    function fun(u,p)
+        eval_poly(p, u) * identity(u)
+    end
+    prob = QuadratureProblem(fun, 0.0, 1.0, a)
+    solve(prob, HCubatureJL()).u
+end
+
+teste(p)
+Zygote.gradient(teste, p)
+ForwardDiff.gradient(teste, p)
+
+a = collect(1:5)
+
+testa(a)
+
+Zygote.gradient(testa, a)
+b = ForwardDiff.gradient(testa, a)
+ForwardDiff.gradient(p -> eval_poly(p, 0.5), a)
+Zygote.gradient(p -> eval_poly(p, 0.5), a)

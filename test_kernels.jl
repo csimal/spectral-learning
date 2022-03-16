@@ -43,6 +43,9 @@ Zygote.gradient(ip -> ip(f), ip)
 
 f_app = Fun(f, 0..1)
 
+Zygote.gradient(p -> p(0.5), f_app)
+Zygote.gradient(p -> p([0.5])[1], bfa)
+
 x = range(0.0,1.0, length=100)
 
 rbf = UniformRBFE(x, 10)

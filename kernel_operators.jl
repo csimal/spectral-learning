@@ -15,7 +15,7 @@ function eval_(ko::KernelOperator, f; solver=ko.solver)
         k(p,u) * f(u)
     end
     return function(x)
-        prob = QuadratureProblem(fun,0,1,x)
+        prob = QuadratureProblem{false}(fun,0,1,x)
         solve(prob, solver).u
     end
 end

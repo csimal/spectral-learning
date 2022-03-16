@@ -15,28 +15,19 @@ SpectralKernelOperator(B, λ, b) = SpectralKernelOperator(B, λ, b, identity, f 
 
 Flux.@functor SpectralKernelOperator
 
-function (cs::SpectralKernelOperator)(x)
-    B, λ, b, σ = cs.B, cs.λ, cs.b, cs.σ
+function (sk::SpectralKernelOperator)(x)
+    B, λ, b, σ = sk.B, sk.λ, sk.b, sk.σ
     y = B(x)
     z = t -> let yt = y(t)
         σ(yt - λ(t)*yt + b(t))
     end
-    cs.project(z)
+    sk.project(z)
 end
 
-#function ChainRulesCore.rrule(cs::ContinuousSpectral, x::Function)
-    
-#end
-
-struct InnerProductOperator{F,W,B}
-    w::Vector{W}
-    b::B
-    σ::F
-end
-
-Flux.@functor InnerProductOperator
-
-function (ipo::InnerProductOperator)(x)
-    y = [w(x) for w in ipo.w]
-    σ.(y + b)
+function ChainRulesCore.rrule(sk::SpectralKernelOperator, x)
+    y = sk(x)
+    function sk_pullback(δy)
+        
+    end
+    return y, sk_pullback
 end
