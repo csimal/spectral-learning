@@ -2025,6 +2025,12 @@ git-tree-sha1 = "cbf21db885f478e4bd73b286af6e67d1beeebe4c"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
 version = "1.8.4"
 
+[[SpectralLearning]]
+deps = ["ApproxFun", "ChainRulesCore", "Flux", "HCubature", "Quadrature", "Zygote"]
+path = "/home/csimal/.julia/dev/SpectralLearning"
+uuid = "28497bba-f241-4af6-8f34-55b57bfde5af"
+version = "0.1.0"
+
 [[Splines2]]
 deps = ["LinearAlgebra", "OffsetArrays", "Statistics"]
 git-tree-sha1 = "bf8f751f5e5f84c81383115b3ed19300a5a6024c"
