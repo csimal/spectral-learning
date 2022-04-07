@@ -27,7 +27,9 @@ end
 function ChainRulesCore.rrule(sk::SpectralKernelOperator, x)
     y = sk(x)
     function sk_pullback(δy)
-        
+        δB = NoTangent()
+        δσ = NoTangent()
+        ∇b(t) = grad(b, t)
     end
     return y, sk_pullback
 end
